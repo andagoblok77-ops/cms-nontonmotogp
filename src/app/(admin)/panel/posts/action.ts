@@ -30,8 +30,8 @@ export const deleteArticle = async (postId: string) => {
 
     updateTag("articles");
     updateTag(`article:${article.slug}`);
-    revalidatePath("/admin");
-    revalidatePath("/admin/articles");
+    revalidatePath("/panel");
+    revalidatePath("/panel/posts");
     revalidatePath("/[...slug]", "page");
 
     return {
@@ -145,8 +145,8 @@ export const saveArticle = async (
 
       updateTag(`article:${article.slug}`);
 
-      revalidatePath("/admin");
-      revalidatePath("/admin/articles");
+      revalidatePath("/panel");
+      revalidatePath("/panel/posts");
 
       revalidatePath("/[...slug]", "page");
     } else {
@@ -185,8 +185,8 @@ export const saveArticle = async (
 
       updateTag(`article:${article.slug}`);
 
-      revalidatePath("/admin");
-      revalidatePath("/admin/articles");
+      revalidatePath("/panel");
+      revalidatePath("/panel/posts");
 
       revalidatePath("/[...slug]", "page");
     }
@@ -235,8 +235,8 @@ export const deleteAllArticle = async (ids: string[]) => {
       updateTag(`article:${article.slug}`);
     });
 
-    revalidatePath("/admin");
-    revalidatePath("/admin/articles");
+    revalidatePath("/panel");
+    revalidatePath("/panel/posts");
 
     revalidatePath("/[...slug]", "page");
 
