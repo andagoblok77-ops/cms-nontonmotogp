@@ -11,7 +11,7 @@ import Breadcrumbnav from "@/components/breadcrumb-nav";
 import { unstable_cache } from "next/cache";
 import prisma from "../../../../lib/prisma";
 import { Prisma } from "@/generated/prisma/client";
-
+export const dynamic = "force-dynamic";
 export type Site = Prisma.SiteSettingGetPayload<{ select: { title: true } }>;
 const getSiteSetting = unstable_cache(
   async () => {

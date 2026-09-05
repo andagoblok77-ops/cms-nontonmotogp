@@ -2,7 +2,8 @@
 
 import { StatusArticle } from "@/generated/prisma/client";
 import prisma from "../../../../../lib/prisma";
-import { updateTag } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
+
 type StreamInput = {
   name: string;
   type: "hls" | "dash";
@@ -12,6 +13,7 @@ type StreamInput = {
   directLink?: string;
   directLinkActive?: boolean;
 };
+
 export const deleteArticle = async (postId: string) => {
   try {
     const article = await prisma.article.findUniqueOrThrow({
@@ -19,14 +21,19 @@ export const deleteArticle = async (postId: string) => {
         id: postId,
       },
     });
-    if (!article) throw new Error("Failed to get article");
+
     await prisma.article.delete({
       where: {
         id: postId,
       },
     });
+
     updateTag("articles");
     updateTag(`article:${article.slug}`);
+    revalidatePath("/admin");
+    revalidatePath("/admin/articles");
+    revalidatePath("/[...slug]", "page");
+
     return {
       success: true,
       message: "Success to delete article",
@@ -36,7 +43,10 @@ export const deleteArticle = async (postId: string) => {
   }
 };
 
-export const saveArticle = async (data: FormData, id?: string | null) => {
+export const saveArticle = async (
+  data: FormData,
+  id?: string | null,
+) => {
   try {
     const title = data.get("title") as string;
     const uploadBy = data.get("uploadBy") as string;
@@ -47,16 +57,19 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
     const metaDescription = data.get("metaDescription") as string;
     const categories = data.get("categories") as string;
     const content = data.get("content") as string;
+
     const streams = JSON.parse(
       (data.get("streams") as string) || "[]",
     ) as StreamInput[];
+
     const categoryNames = categories
       .split(",")
       .map((category) => category.trim())
       .filter(Boolean);
+
     const categoryRecords = await Promise.all(
       categoryNames.map((name) => {
-        const slug = name
+        const categorySlug = name
           .toLowerCase()
           .trim()
           .replace(/[^a-z0-9]+/g, "-")
@@ -64,14 +77,14 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
 
         return prisma.category.upsert({
           where: {
-            slug,
+            slug: categorySlug,
           },
           update: {
             name,
           },
           create: {
             name,
-            slug,
+            slug: categorySlug,
           },
         });
       }),
@@ -88,6 +101,7 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
           slug: true,
         },
       });
+
       article = await prisma.article.update({
         where: {
           id,
@@ -101,6 +115,7 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
           metaDescription,
           content,
           status,
+
           categories: {
             set: categoryRecords.map((category) => ({
               id: category.id,
@@ -123,10 +138,17 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
       });
 
       updateTag("articles");
+
       if (existingArticle?.slug) {
         updateTag(`article:${existingArticle.slug}`);
       }
+
       updateTag(`article:${article.slug}`);
+
+      revalidatePath("/admin");
+      revalidatePath("/admin/articles");
+
+      revalidatePath("/[...slug]", "page");
     } else {
       article = await prisma.article.create({
         data: {
@@ -138,6 +160,7 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
           metaDescription,
           status,
           content,
+
           categories: {
             connect: categoryRecords.map((category) => ({
               id: category.id,
@@ -157,7 +180,15 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
           },
         },
       });
+
       updateTag("articles");
+
+      updateTag(`article:${article.slug}`);
+
+      revalidatePath("/admin");
+      revalidatePath("/admin/articles");
+
+      revalidatePath("/[...slug]", "page");
     }
 
     return {
@@ -177,12 +208,19 @@ export const deleteAllArticle = async (ids: string[]) => {
     if (ids.length === 0) {
       throw new Error("No articles selected");
     }
+
     const articles = await prisma.article.findMany({
       where: {
-        id: { in: ids },
+        id: {
+          in: ids,
+        },
       },
     });
-    if (articles.length == 0) throw new Error("Failed to get articles");
+
+    if (articles.length === 0) {
+      throw new Error("Failed to get articles");
+    }
+
     await prisma.article.deleteMany({
       where: {
         id: {
@@ -196,6 +234,12 @@ export const deleteAllArticle = async (ids: string[]) => {
     articles.forEach((article) => {
       updateTag(`article:${article.slug}`);
     });
+
+    revalidatePath("/admin");
+    revalidatePath("/admin/articles");
+
+    revalidatePath("/[...slug]", "page");
+
     return {
       success: true,
       message: `Success to delete ${articles.length} article`,
