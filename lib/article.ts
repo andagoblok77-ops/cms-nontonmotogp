@@ -88,6 +88,7 @@ export const getArticles = (page = 1, search = "") =>
     ["articles", String(page), search],
     {
       tags: ["articles"],
+      revalidate: 7200,
     },
   )();
 
@@ -123,5 +124,6 @@ export const getArticle = (slug: string) =>
     ["article", slug],
     {
       tags: ["article", `article:${slug}`],
+      revalidate: 7200,
     },
   )();

@@ -7,7 +7,9 @@ export default defineConfig({
   schema: "prisma/schema.prisma",
   migrations: {
     path: "prisma/migrations",
-    seed: "tsx prisma/seed.ts"
+    // seed: "tsx prisma/seed.ts"
+    seed: "tsx prisma/livemotogp_seed.ts"
+    // seed: "tsx prisma/motogpstreams_seed.ts"
   },
   datasource: {
     url: process.env["DIRECT_URL"],

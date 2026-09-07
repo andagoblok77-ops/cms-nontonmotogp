@@ -60,5 +60,6 @@ export const getCategory = (slug: string, page = 1) =>
     ["category", slug, String(page)],
     {
       tags: ["categories", `category:${slug}`],
+      revalidate: 7200,
     },
   )();

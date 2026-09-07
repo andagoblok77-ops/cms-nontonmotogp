@@ -1,18 +1,10 @@
-import { Metadata } from "next";
-import prisma from "../../../../../lib/prisma";
-import Table from "./components/table";
-
-export const metadata: Metadata = {
-  title: "Posts",
-};
 import type { Prisma } from "@/generated/prisma/client";
-
-export type Article = Prisma.ArticleGetPayload<{
-  include: {
-    categories: true;
-    streams: true;
-  };
-}>;
+import prisma from "../../../../../lib/prisma";
+import { Metadata } from "next";
+import Table from "../streams/components/components/table";
+export const metadata: Metadata = {
+  title: "Widgets",
+};
 
 type PageProps = {
   searchParams: Promise<{
@@ -29,45 +21,30 @@ const Page = async ({ searchParams }: PageProps) => {
   const pageSize = Math.max(Number(params.pageSize) || 10, 1);
   const search = params.search?.trim() || "";
 
-  const where: Prisma.ArticleWhereInput = search
+  const where: Prisma.AdWidgetsWhereInput = search
     ? {
-        title: {
+        name: {
           contains: search,
           mode: "insensitive",
         },
       }
     : {};
 
-  const [articles, total, streams] = await Promise.all([
-    prisma.article.findMany({
+  const [adWidgets, total] = await Promise.all([
+    prisma.adWidgets.findMany({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
       orderBy: {
         createdAt: "desc",
       },
-      include: {
-        categories: true,
-        streams: true,
-      },
     }),
-
-    prisma.article.count({
-      where,
-    }),
-    prisma.stream.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
-    }),
+    prisma.adWidgets.count({ where }),
   ]);
-
   const pageCount = Math.ceil(total / pageSize);
-
   return (
     <Table
-      data={articles}
-      streams={streams}
+      datas={adWidgets}
       page={page}
       pageSize={pageSize}
       pageCount={pageCount}

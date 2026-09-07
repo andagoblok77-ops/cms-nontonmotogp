@@ -6,6 +6,7 @@ import Player from "../components/player";
 
 import { getArticle } from "../../../../lib/article";
 import { Metadata } from "next";
+import { getAds } from "../../../../lib/ads";
 
 export type Posts = Prisma.ArticleGetPayload<{
   include: {
@@ -131,9 +132,10 @@ const Page = async ({ params }: PageProps) => {
     notFound();
   }
 
-  const [posts, site] = await Promise.all([
+  const [posts, site, ads] = await Promise.all([
     getArticle(articleSlug),
     getSiteSetting(),
+    getAds(),
   ]);
 
   if (!posts) {
@@ -204,7 +206,7 @@ const Page = async ({ params }: PageProps) => {
           __html: JSON.stringify(jsonLd).replace(/</g, "\\u003c"),
         }}
       />
-      <Player posts={posts} site={playerSite} />
+      <Player ads={ads} posts={posts} site={playerSite} />
     </>
   );
 };

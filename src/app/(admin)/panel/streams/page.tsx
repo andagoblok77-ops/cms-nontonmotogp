@@ -1,16 +1,15 @@
 import { Metadata } from "next";
 import prisma from "../../../../../lib/prisma";
 import Table from "./components/table";
-
-export const metadata: Metadata = {
-  title: "Posts",
-};
 import type { Prisma } from "@/generated/prisma/client";
 
-export type Article = Prisma.ArticleGetPayload<{
+export const metadata: Metadata = {
+  title: "Streams",
+};
+
+export type Streams = Prisma.StreamGetPayload<{
   include: {
-    categories: true;
-    streams: true;
+    articles: true;
   };
 }>;
 
@@ -29,17 +28,27 @@ const Page = async ({ searchParams }: PageProps) => {
   const pageSize = Math.max(Number(params.pageSize) || 10, 1);
   const search = params.search?.trim() || "";
 
-  const where: Prisma.ArticleWhereInput = search
+  const where: Prisma.StreamWhereInput = search
     ? {
-        title: {
-          contains: search,
-          mode: "insensitive",
-        },
+        OR: [
+          {
+            name: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+          {
+            url: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        ],
       }
     : {};
 
-  const [articles, total, streams] = await Promise.all([
-    prisma.article.findMany({
+  const [streams, total] = await Promise.all([
+    prisma.stream.findMany({
       where,
       skip: (page - 1) * pageSize,
       take: pageSize,
@@ -47,18 +56,12 @@ const Page = async ({ searchParams }: PageProps) => {
         createdAt: "desc",
       },
       include: {
-        categories: true,
-        streams: true,
+        articles: true,
       },
     }),
 
-    prisma.article.count({
+    prisma.stream.count({
       where,
-    }),
-    prisma.stream.findMany({
-      orderBy: {
-        createdAt: "desc",
-      },
     }),
   ]);
 
@@ -66,8 +69,7 @@ const Page = async ({ searchParams }: PageProps) => {
 
   return (
     <Table
-      data={articles}
-      streams={streams}
+      datas={streams}
       page={page}
       pageSize={pageSize}
       pageCount={pageCount}

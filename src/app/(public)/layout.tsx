@@ -5,7 +5,6 @@ import { Navbar } from "@/components/navbar";
 import { Footer } from "@/components/footer";
 import { Prisma } from "@/generated/prisma/client";
 import { getSiteSetting } from "../../../lib/site";
-import Hero from "@/components/hero";
 import { getAds } from "../../../lib/ads";
 import AdsSection from "@/components/ads/after-hero";
 

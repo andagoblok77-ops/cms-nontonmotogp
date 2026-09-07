@@ -10,6 +10,8 @@ import Dash from "./dash";
 import { Calendar, TextIcon, UserIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
+import AdsSection from "@/components/ads/after-hero";
+import { AdsSectionProps } from "../../../../lib/ads";
 
 export type PlayerSite = Prisma.SiteSettingGetPayload<{
   select: {
@@ -24,9 +26,11 @@ export type PlayerSite = Prisma.SiteSettingGetPayload<{
 export default function Player({
   posts,
   site,
+  ads,
 }: {
   posts: Posts;
   site: PlayerSite;
+  ads: AdsSectionProps[];
 }) {
   const [activeServer, setActiveServer] = useState(
     posts.streams[0]?.name ?? "",
@@ -111,7 +115,9 @@ export default function Player({
           )}
         </div>
       </div>
-
+      {process.env.VERCEL_ENV === "production" && (
+        <AdsSection ads={ads} position="article" />
+      )}
       <PlayerNotice site={site} />
 
       <ServerButtons

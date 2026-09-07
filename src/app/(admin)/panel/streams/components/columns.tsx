@@ -7,7 +7,6 @@ import type {
   ColumnDef,
   RowSelectionState,
 } from "@tanstack/react-table";
-import { format } from "date-fns";
 
 import {
   DropdownMenu,
@@ -18,29 +17,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 import { Checkbox } from "@/components/ui/checkbox";
-
 import { SortableColumn } from "@/components/sortable-column";
-
 import { tableFeaturesConfig } from "@/lib/table-features";
 
 import type { Prisma } from "@/generated/prisma/client";
+import { formatDistanceToNow } from "date-fns";
+import { id } from "date-fns/locale";
 
-import Image from "next/image";
+export type Streams = Prisma.StreamGetPayload<object>;
 
-export type Article = Prisma.ArticleGetPayload<{
-  include: {
-    categories: true;
-    streams: true;
-  };
-}>;
+type StreamColumn = Column<typeof tableFeaturesConfig, Streams, unknown>;
 
-type PostColumn = Column<typeof tableFeaturesConfig, Article, unknown>;
-
-function PostSortableColumn({
+function StreamSortableColumn({
   column,
   title,
 }: {
-  column: PostColumn;
+  column: StreamColumn;
   title: string;
 }) {
   const handleSort = column.getToggleSortingHandler();
@@ -54,12 +46,12 @@ function PostSortableColumn({
   );
 }
 
-type PostsTableAction = {
+type StreamsTableAction = {
   setType: (props: "edit" | "add") => void;
   onEdit: (props: boolean) => void;
   onView: (props: boolean) => void;
   onDelete: (props: boolean) => void;
-  setArticle: (props: Article) => void;
+  setData: (props: Streams) => void;
   setTypeDelete: (type: "single" | "many") => void;
   setSelectedIds: React.Dispatch<React.SetStateAction<string[]>>;
   setRowSelection: React.Dispatch<React.SetStateAction<RowSelectionState>>;
@@ -69,12 +61,12 @@ export const getColumns = ({
   onEdit,
   onView,
   onDelete,
-  setArticle,
+  setData,
   setType,
   setSelectedIds,
   setTypeDelete,
   setRowSelection,
-}: PostsTableAction): ColumnDef<typeof tableFeaturesConfig, Article>[] => [
+}: StreamsTableAction): ColumnDef<typeof tableFeaturesConfig, Streams>[] => [
   {
     id: "select",
 
@@ -116,7 +108,7 @@ export const getColumns = ({
 
           setSelectedIds((prev) => {
             if (checked === true) {
-              return [...prev, row.original.id];
+              return Array.from(new Set([...prev, row.original.id]));
             }
 
             return prev.filter((id) => id !== row.original.id);
@@ -126,105 +118,85 @@ export const getColumns = ({
       />
     ),
   },
-  {
-    accessorKey: "thumbnail",
-    header: "Thumbnail",
-
-    cell: ({ row }) => {
-      const thumbnail = row.getValue("thumbnail") as string;
-
-      return (
-        <div className="relative h-14 w-20 overflow-hidden rounded-md">
-          {thumbnail ? (
-            <Image
-              src={thumbnail}
-              alt="Thumbnail"
-              fill
-              className="object-cover"
-              sizes="80px"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground">
-              No Image
-            </div>
-          )}
-        </div>
-      );
-    },
-  },
-  {
-    accessorKey: "poster",
-    header: "WM Player",
-
-    cell: ({ row }) => {
-      const thumbnail = row.getValue("poster") as string;
-
-      return (
-        <div className="relative h-14 w-20 overflow-hidden rounded-md">
-          {thumbnail ? (
-            <Image
-              src={thumbnail}
-              alt="Thumbnail"
-              fill
-              className="object-cover"
-              sizes="80px"
-            />
-          ) : (
-            <div className="flex h-full w-full items-center justify-center bg-muted text-xs text-muted-foreground">
-              No Image
-            </div>
-          )}
-        </div>
-      );
-    },
-  },
 
   {
-    accessorKey: "title",
+    accessorKey: "name",
 
     header: ({ column }) => (
-      <PostSortableColumn column={column} title="Title" />
+      <StreamSortableColumn column={column} title="Name" />
     ),
 
     cell: ({ row }) => (
       <div className="max-w-100 truncate font-medium">
-        {row.getValue("title")}
+        {row.getValue("name")}
       </div>
     ),
   },
 
   {
-    accessorKey: "categories",
+    accessorKey: "type",
 
-    header: ({ column }) => (
-      <PostSortableColumn column={column} title="Category" />
-    ),
+    header: "Type",
+
     cell: ({ row }) => {
-      const categori = row.original.categories.map((e) => e.name).join(", ");
-      return <span>{categori}</span>;
+      const type = row.getValue("type") as Streams["type"];
+
+      return (
+        <span className="inline-flex rounded-full bg-blue-100 px-2.5 py-1 text-xs font-medium text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">
+          {type.toUpperCase()}
+        </span>
+      );
     },
   },
 
   {
-    accessorKey: "status",
+    accessorKey: "url",
 
-    header: "Status",
+    header: "URL",
+
+    cell: ({ row }) => (
+      <div className="max-w-100 truncate font-mono text-xs">
+        {row.getValue("url")}
+      </div>
+    ),
+  },
+
+  {
+    accessorKey: "directLinkActive",
+
+    header: "Direct Link",
 
     cell: ({ row }) => {
-      const status = row.getValue("status") as Article["status"];
+      const active = row.getValue(
+        "directLinkActive",
+      ) as Streams["directLinkActive"];
 
       return (
         <span
           className={
-            status === "publish"
+            active
               ? "inline-flex rounded-full bg-green-100 px-2.5 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400"
               : "inline-flex rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400"
           }
         >
-          {status}
+          {active ? "ACTIVE" : "NONACTIVE"}
         </span>
       );
     },
+  },
+
+  {
+    accessorKey: "createdAt",
+
+    header: ({ column }) => (
+      <StreamSortableColumn column={column} title="Created" />
+    ),
+
+    cell: ({ row }) =>
+      formatDistanceToNow(new Date(row.original.createdAt), {
+        addSuffix: true,
+        locale: id,
+      }),
   },
 
   {
@@ -256,30 +228,19 @@ export const getColumns = ({
 
           <DropdownMenuContent align="end">
             <DropdownMenuItem
-              onClick={async () => {
-                const url = `${window.location.origin}/${format(
-                  row.original.createdAt,
-                  "yyyy/MM/dd",
-                )}/${row.original.slug}`;
-
-                await navigator.clipboard.writeText(url);
-              }}
-            >
-              Copy Slug
-            </DropdownMenuItem>
-            <DropdownMenuItem
               onClick={() => {
-                setArticle(row.original);
+                setData(row.original);
                 onView(true);
               }}
             >
               View
             </DropdownMenuItem>
+
             <DropdownMenuItem
               onClick={() => {
-                setArticle(row.original);
-                onEdit(true);
+                setData(row.original);
                 setType("edit");
+                onEdit(true);
               }}
             >
               Edit
@@ -293,7 +254,7 @@ export const getColumns = ({
                 setSelectedIds([]);
                 setRowSelection({});
                 setTypeDelete("single");
-                setArticle(row.original);
+                setData(row.original);
                 onDelete(true);
               }}
             >

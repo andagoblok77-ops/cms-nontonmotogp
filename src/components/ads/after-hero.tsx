@@ -5,21 +5,15 @@ import { AdsSectionProps } from "../../../lib/ads";
 
 interface Props {
   ads: AdsSectionProps[];
-  position: "head" | "body";
+  position: "head" | "body" | "article" | "sidebar" | "floating" | "footer";
 }
 
 const AdsSection = ({ ads, position }: Props) => {
-  
-
   const containerRef = useRef<HTMLDivElement>(null);
 
   const filteredAds = useMemo(() => {
     return ads
-      .filter(
-        (ad) =>
-          ad.isActive &&
-          ad.position === position
-      )
+      .filter((ad) => ad.isActive && ad.position === position)
       .sort((a, b) => a.order - b.order);
   }, [ads, position]);
 
@@ -48,7 +42,7 @@ const AdsSection = ({ ads, position }: Props) => {
   }
 
   return (
-    <section className="mx-auto mt-2 w-full max-w-6xl px-4 sm:mt-4">
+    <section className="mx-auto mt-2 mb-1 w-full max-w-6xl px-4 sm:mt-4">
       <div
         ref={containerRef}
         className="flex w-full flex-col items-center justify-center gap-2"

@@ -5,6 +5,7 @@ import prisma from "../../../../../lib/prisma";
 import { revalidatePath, updateTag } from "next/cache";
 
 type StreamInput = {
+  id?: string;
   name: string;
   type: "hls" | "dash";
   url: string;
@@ -102,6 +103,77 @@ export const saveArticle = async (
         },
       });
 
+      if (!existingArticle) {
+        throw new Error("Article not found");
+      }
+
+      const existingStreams = await prisma.stream.findMany({
+        where: {
+          articles: {
+            some: {
+              id,
+            },
+          },
+        },
+        select: {
+          id: true,
+        },
+      });
+
+      const submittedStreamIds = streams
+        .map((stream) => stream.id)
+        .filter((streamId): streamId is string => Boolean(streamId));
+
+      const existingStreamIds = existingStreams.map((stream) => stream.id);
+
+      const streamsToDelete = existingStreamIds.filter(
+        (streamId) => !submittedStreamIds.includes(streamId),
+      );
+
+      if (streamsToDelete.length > 0) {
+        await prisma.stream.updateMany({
+          where: {
+            id: {
+              in: streamsToDelete,
+            },
+          },
+          data: {},
+        });
+      }
+
+      const streamRecords = await Promise.all(
+        streams.map(async (stream) => {
+          if (stream.id) {
+            return prisma.stream.update({
+              where: {
+                id: stream.id,
+              },
+              data: {
+                name: stream.name,
+                type: stream.type,
+                url: stream.url,
+                drmId: stream.drmId,
+                drmKey: stream.drmKey,
+                directLink: stream.directLink,
+                directLinkActive: stream.directLinkActive,
+              },
+            });
+          }
+
+          return prisma.stream.create({
+            data: {
+              name: stream.name,
+              type: stream.type,
+              url: stream.url,
+              drmId: stream.drmId,
+              drmKey: stream.drmKey,
+              directLink: stream.directLink,
+              directLinkActive: stream.directLinkActive,
+            },
+          });
+        }),
+      );
+
       article = await prisma.article.update({
         where: {
           id,
@@ -123,23 +195,33 @@ export const saveArticle = async (
           },
 
           streams: {
-            deleteMany: {},
-            create: streams.map((stream: StreamInput) => ({
-              name: stream.name,
-              type: stream.type,
-              url: stream.url,
-              drmId: stream.drmId,
-              drmKey: stream.drmKey,
-              directLink: stream.directLink,
-              directLinkActive: stream.directLinkActive,
+            set: streamRecords.map((stream) => ({
+              id: stream.id,
             })),
           },
         },
+        include: {
+          streams: true,
+          categories: true,
+        },
       });
+
+      if (streamsToDelete.length > 0) {
+        await prisma.stream.deleteMany({
+          where: {
+            id: {
+              in: streamsToDelete,
+            },
+            articles: {
+              none: {},
+            },
+          },
+        });
+      }
 
       updateTag("articles");
 
-      if (existingArticle?.slug) {
+      if (existingArticle.slug) {
         updateTag(`article:${existingArticle.slug}`);
       }
 
@@ -147,9 +229,24 @@ export const saveArticle = async (
 
       revalidatePath("/panel");
       revalidatePath("/panel/posts");
-
       revalidatePath("/[...slug]", "page");
     } else {
+      const streamRecords = await Promise.all(
+        streams.map((stream) =>
+          prisma.stream.create({
+            data: {
+              name: stream.name,
+              type: stream.type,
+              url: stream.url,
+              drmId: stream.drmId,
+              drmKey: stream.drmKey,
+              directLink: stream.directLink,
+              directLinkActive: stream.directLinkActive,
+            },
+          }),
+        ),
+      );
+
       article = await prisma.article.create({
         data: {
           title,
@@ -168,26 +265,22 @@ export const saveArticle = async (
           },
 
           streams: {
-            create: streams.map((stream: StreamInput) => ({
-              name: stream.name,
-              type: stream.type,
-              url: stream.url,
-              drmId: stream.drmId,
-              drmKey: stream.drmKey,
-              directLink: stream.directLink,
-              directLinkActive: stream.directLinkActive,
+            connect: streamRecords.map((stream) => ({
+              id: stream.id,
             })),
           },
+        },
+        include: {
+          streams: true,
+          categories: true,
         },
       });
 
       updateTag("articles");
-
       updateTag(`article:${article.slug}`);
 
       revalidatePath("/panel");
       revalidatePath("/panel/posts");
-
       revalidatePath("/[...slug]", "page");
     }
 
@@ -237,7 +330,6 @@ export const deleteAllArticle = async (ids: string[]) => {
 
     revalidatePath("/panel");
     revalidatePath("/panel/posts");
-
     revalidatePath("/[...slug]", "page");
 
     return {

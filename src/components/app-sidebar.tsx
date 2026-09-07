@@ -12,6 +12,7 @@ import {
   Globe,
   Image,
   Settings2,
+  VideoIcon,
 } from "lucide-react";
 import {
   Sidebar,
@@ -88,6 +89,11 @@ const data = {
           title: "Ads Widgets",
           url: "ads",
           icon: Settings2,
+        },
+        {
+          title: "Streams",
+          url: "streams",
+          icon: VideoIcon,
         },
         {
           title: "Settings",

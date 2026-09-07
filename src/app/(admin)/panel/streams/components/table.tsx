@@ -1,73 +1,67 @@
 "use client";
-import { Plus, Trash2 } from "lucide-react";
 
+import { Plus, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { DataTable } from "@/components/data-table";
-
-import { getColumns } from "./columns";
+import { Streams, getColumns } from "./columns";
 import { useState } from "react";
-import FormPosts from "./form";
+import FormStream from "./form";
 import View from "./view";
 import Delete from "./delete";
-import type { Prisma } from "@/generated/prisma/client";
-import { deleteAllArticle, deleteArticle } from "../action";
+import {
+  deleteAllStream,
+  deleteStream,
+} from "../action";
 import { toast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
 import { RowSelectionState } from "@tanstack/react-table";
 
-export type Article = Prisma.ArticleGetPayload<{
-  include: {
-    categories: true;
-    streams: true;
-  };
-}>;
-
 type TableProps = {
-  data: Article[];
+  datas: Streams[];
   page: number;
   pageSize: number;
   pageCount: number;
   total: number;
   search: string;
-  streams: ExistingStream[];
-};
-
-export type ExistingStream = {
-  id: string;
-  name: string;
-  type: "hls" | "dash";
-  url: string;
-  drmId: string | null;
-  drmKey: string | null;
-  directLink: string | null;
-  directLinkActive: boolean;
 };
 
 export default function Table({
-  data,
+  datas,
   page,
   pageSize,
   pageCount,
   total,
   search,
-  streams,
 }: TableProps) {
   const [open, setOpen] = useState<boolean>(false);
-  const [openModalDelete, setOpenModalDelete] = useState<boolean>(false);
-  const [openModalView, setOpenModalView] = useState<boolean>(false);
-  const [article, setArticle] = useState<Article | null>(null);
+  const [openModalDelete, setOpenModalDelete] =
+    useState<boolean>(false);
+  const [openModalView, setOpenModalView] =
+    useState<boolean>(false);
+
+  const [data, setData] = useState<Streams | null>(null);
+
   const [type, setType] = useState<"add" | "edit">("add");
-  const [typeDelete, setTypeDelete] = useState<"single" | "many">("single");
+
+  const [typeDelete, setTypeDelete] =
+    useState<"single" | "many">("single");
+
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+
+  const [rowSelection, setRowSelection] =
+    useState<RowSelectionState>({});
+
   const router = useRouter();
 
-  const handleDelete = async (postId: string) => {
+  const handleDelete = async (streamId: string) => {
     try {
-      const { message } = await deleteArticle(postId);
+      const { message } = await deleteStream(streamId);
 
       setOpenModalDelete(false);
+      setData(null);
+
       router.refresh();
+
       toast.add({
         type: "success",
         description: message,
@@ -86,12 +80,14 @@ export default function Table({
 
   const handleDeleteMany = async (ids: string[]) => {
     try {
-      const { message } = await deleteAllArticle(ids);
+      const { message } = await deleteAllStream(ids);
+
       setOpenModalDelete(false);
-      setArticle(null);
+      setData(null);
 
       setSelectedIds([]);
       setRowSelection({});
+
       router.refresh();
 
       toast.add({
@@ -111,11 +107,11 @@ export default function Table({
   };
 
   const columns = getColumns({
-    setType: setType,
+    setType,
     onEdit: setOpen,
     onView: setOpenModalView,
     onDelete: setOpenModalDelete,
-    setArticle: setArticle,
+    setData,
     setTypeDelete,
     setSelectedIds,
     setRowSelection,
@@ -123,12 +119,14 @@ export default function Table({
 
   return (
     <div className="flex flex-1 flex-col gap-6 p-6">
-      <div className="flex items-start sm:items-center flex-col gap-4 sm:flex-row sm:justify-between">
+      <div className="flex flex-col items-start gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Posts</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">
+            Streams
+          </h1>
 
           <p className="text-sm text-muted-foreground">
-            Manage your blog posts.
+            Manage your streaming sources.
           </p>
         </div>
 
@@ -139,30 +137,32 @@ export default function Table({
             onClick={() => {
               setOpenModalDelete(true);
               setTypeDelete("many");
+              setData(null);
             }}
             className="w-full rounded-sm sm:w-auto"
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete All Posts
-            {selectedIds.length > 0 && ` (${selectedIds.length})`}
+            Delete All Streams
+            {selectedIds.length > 0 &&
+              ` (${selectedIds.length})`}
           </Button>
 
           <Button
             onClick={() => {
-              setArticle(null);
+              setData(null);
               setType("add");
               setOpen(true);
             }}
             className="w-full rounded-sm sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Posts
+            Add Stream
           </Button>
         </div>
       </div>
 
-      <DataTable<Article>
-        data={data}
+      <DataTable<Streams>
+        data={datas}
         columns={columns}
         page={page}
         pageSize={pageSize}
@@ -171,21 +171,27 @@ export default function Table({
         searchKey={search}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        searchPlaceholder="Search posts..."
+        searchPlaceholder="Search streams..."
       />
-      <FormPosts
+
+      <FormStream
         open={open}
         setOpen={setOpen}
-        article={article}
+        stream={data}
         type={type}
-        streams={streams}
       />
-      <View open={openModalView} setOpen={setOpenModalView} article={article} />
+
+      <View
+        open={openModalView}
+        setOpen={setOpenModalView}
+        data={data}
+      />
+
       <Delete
         open={openModalDelete}
         setOpen={setOpenModalDelete}
-        title={article?.title}
-        id={article?.id}
+        title={data?.name}
+        id={data?.id}
         onDelete={handleDelete}
         type={typeDelete}
         onDeleteMany={handleDeleteMany}

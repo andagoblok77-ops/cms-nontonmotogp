@@ -110,10 +110,10 @@ export default function Table({
     <div className="flex flex-1 flex-col gap-6 p-6">
       <div className="flex items-start sm:items-center flex-col gap-4 sm:flex-row sm:justify-between">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Ads Widgets</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Ads Widget</h1>
 
           <p className="text-sm text-muted-foreground">
-            Manage advertisement widgets.
+            Manage advertisement .
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export default function Table({
             className="w-full rounded-sm sm:w-auto"
           >
             <Trash2 className="mr-2 h-4 w-4" />
-            Delete All Widget
+            Delete All Ads Widget
             {selectedIds.length > 0 && ` (${selectedIds.length})`}
           </Button>
 
@@ -141,7 +141,7 @@ export default function Table({
             className="w-full rounded-sm sm:w-auto"
           >
             <Plus className="mr-2 h-4 w-4" />
-            Add Widget
+            Add Ads Widget
           </Button>
         </div>
       </div>
@@ -156,7 +156,7 @@ export default function Table({
         searchKey={search}
         rowSelection={rowSelection}
         onRowSelectionChange={setRowSelection}
-        searchPlaceholder="Search ads widgets..."
+        searchPlaceholder="Search ads..."
       />
 
       <FormAdsWidgets

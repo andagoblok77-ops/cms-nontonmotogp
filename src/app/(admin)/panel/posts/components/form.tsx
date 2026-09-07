@@ -28,6 +28,7 @@ import { Article } from "./columns";
 import { saveArticle } from "../action";
 import { toast } from "@/components/ui/toast";
 import { useRouter } from "next/navigation";
+import { ExistingStream } from "./table";
 
 const formSchema = z.object({
   title: z
@@ -57,6 +58,7 @@ const formSchema = z.object({
 
   streams: z.array(
     z.object({
+      id: z.string().optional(),
       name: z.string(),
       type: z.enum(["hls", "dash"]),
       url: z.string(),
@@ -69,42 +71,45 @@ const formSchema = z.object({
 
   content: z.string().optional(),
 });
+
 type FormPostsProps = {
   setOpen: (open: boolean) => void;
   type: "edit" | "add";
   open: boolean;
   article: Article | null;
+  streams: ExistingStream[];
 };
-const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
+
+const FormPosts = ({
+  open,
+  setOpen,
+  article,
+  type,
+  streams,
+}: FormPostsProps) => {
+  const [selectedStreamId, setSelectedStreamId] = useState("");
   const slugTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const router = useRouter();
   const [uploadBy, setUploadBy] = useState<string>("");
 
+  const defaultValues = {
+    title: "",
+    thumbnail: "",
+    poster: "",
+    slug: "",
+    metaDescription: "",
+    status: "publish" as const,
+    uploadBy: uploadBy,
+    categories: "",
+    streams: [],
+    content: "",
+  };
+
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      title: "",
-      thumbnail: "",
-      poster: "",
-      slug: "",
-      metaDescription: "",
-      status: "publish",
-      uploadBy: uploadBy,
-      categories: "",
-      streams: [
-        {
-          name: "",
-          type: "hls",
-          url: "",
-          drmId: "",
-          drmKey: "",
-          directLink: "",
-          directLinkActive: false,
-        },
-      ],
-      content: "",
-    },
+    defaultValues,
   });
+
   const { fields, append, remove } = useFieldArray({
     control: form.control,
     name: "streams",
@@ -114,11 +119,13 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
 
   const setSlug = async (val: string) => {
     const slug = await createSlug("article", val, 50);
+
     setValue("slug", slug, {
       shouldValidate: true,
       shouldDirty: true,
     });
   };
+
   const onSubmit = async (data: z.infer<typeof formSchema>) => {
     try {
       const formData = new FormData();
@@ -126,7 +133,6 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
       formData.append("title", data.title);
       formData.append("uploadBy", data.uploadBy);
       formData.append("thumbnail", data.thumbnail);
-
       formData.append("poster", data.poster ?? "");
       formData.append("slug", data.slug);
       formData.append("metaDescription", data.metaDescription ?? "");
@@ -134,12 +140,15 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
       formData.append("status", data.status);
       formData.append("content", data.content ?? "");
       formData.append("streams", JSON.stringify(data.streams));
+
       const { message } = await saveArticle(
         formData,
-        type == "add" ? null : article?.id,
+        type === "add" ? null : article?.id,
       );
+
       setOpen(false);
       router.refresh();
+
       toast.add({
         type: "success",
         description: message,
@@ -163,28 +172,6 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
       }
     };
   }, []);
-  const defaultValues = {
-    title: "",
-    thumbnail: "",
-    poster: "",
-    slug: "",
-    metaDescription: "",
-    status: "publish" as const,
-    uploadBy: uploadBy,
-    categories: "",
-    streams: [
-      {
-        name: "",
-        type: "hls" as const,
-        url: "",
-        drmId: "",
-        drmKey: "",
-        directLink: "",
-        directLinkActive: false,
-      },
-    ],
-    content: "",
-  };
 
   useEffect(() => {
     if (!open) {
@@ -208,8 +195,10 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
         metaDescription: article.metaDescription ?? "",
         categories:
           article.categories?.map((category) => category.name).join(", ") ?? "",
+
         streams:
           article.streams?.map((stream) => ({
+            id: stream.id,
             name: stream.name,
             type: stream.type,
             url: stream.url,
@@ -217,11 +206,12 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
             drmKey: stream.drmKey ?? "",
             directLink: stream.directLink ?? "",
             directLinkActive: stream.directLinkActive ?? false,
-          })) ?? defaultValues.streams,
+          })) ?? [],
+
         content: article.content ?? "",
       });
     }
-  }, [open, type, article, form]);
+  }, [open, type, article]);
 
   useEffect(() => {
     async function getProfile() {
@@ -231,18 +221,26 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
         data: { user },
       } = await supabase.auth.getUser();
 
-      if (user) setUploadBy(user.user_metadata?.display_name ?? "X");
+      if (user) {
+        const name = user.user_metadata?.display_name ?? "X";
+        setUploadBy(name);
+
+        if (type === "add") {
+          form.setValue("uploadBy", name);
+        }
+      }
     }
 
     getProfile();
-  }, [form]);
+  }, [form, type]);
+
   return (
     <div>
       <Modal
         open={open}
         onOpenChange={setOpen}
         className="w-[calc(100vw-1rem)] max-w-2xl rounded-sm sm:w-full"
-        title="Add Post"
+        title={type === "edit" ? "Edit Post" : "Add Post"}
         description=""
         footer={
           <div className="grid grid-cols-1 gap-2 sm:grid-cols-3">
@@ -278,10 +276,10 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
         <form
           id="article-form"
           onSubmit={form.handleSubmit(onSubmit)}
-          className="max-h-[60vh] overflow-y-scroll "
+          className="max-h-[60vh] overflow-y-scroll"
         >
           <FieldGroup>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Controller
                 name="title"
                 control={form.control}
@@ -340,9 +338,10 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                 )}
               />
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+            <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
               <Controller
-                name={"thumbnail"}
+                name="thumbnail"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
@@ -362,8 +361,9 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                   </Field>
                 )}
               />
+
               <Controller
-                name={"poster"}
+                name="poster"
                 control={form.control}
                 render={({ field, fieldState }) => (
                   <Field data-invalid={fieldState.invalid}>
@@ -383,6 +383,7 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                   </Field>
                 )}
               />
+
               <Controller
                 name="status"
                 control={form.control}
@@ -420,6 +421,7 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                   </Field>
                 )}
               />
+
               <Controller
                 name="uploadBy"
                 control={form.control}
@@ -479,10 +481,65 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
               <div className="flex items-center justify-between gap-2">
                 <div>
                   <FieldLabel>Streaming URLs</FieldLabel>
+
                   <FieldDescription>
-                    Add one or more streaming sources.
+                    Pilih stream yang sudah ada atau buat stream baru.
                   </FieldDescription>
                 </div>
+              </div>
+
+              <div className="mt-3 flex gap-2">
+                <Select
+                  value={selectedStreamId}
+                  onValueChange={(value) => {
+                    const stream = streams.find((item) => item.id === value);
+
+                    if (!stream) return;
+
+                    const alreadyExists = form
+                      .getValues("streams")
+                      .some((item) => item.id === stream.id);
+
+                    if (alreadyExists) {
+                      toast.add({
+                        type: "error",
+                        description: "Stream sudah ditambahkan.",
+                      });
+
+                      setSelectedStreamId("");
+                      return;
+                    }
+
+                    append({
+                      id: stream.id,
+                      name: stream.name,
+                      type: stream.type,
+                      url: stream.url,
+                      drmId: stream.drmId ?? "",
+                      drmKey: stream.drmKey ?? "",
+                      directLink: stream.directLink ?? "",
+                      directLinkActive: stream.directLinkActive ?? false,
+                    });
+
+                    setSelectedStreamId("");
+                  }}
+                >
+                  <SelectTrigger className="rounded-sm">
+                    <SelectValue placeholder="Pilih stream dari database" />
+                  </SelectTrigger>
+
+                  <SelectContent className="rounded-sm">
+                    {streams.map((stream) => (
+                      <SelectItem
+                        key={stream.id}
+                        value={stream.id}
+                        className="rounded-sm"
+                      >
+                        {stream.name} — {stream.type.toUpperCase()}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
                 <Button
                   type="button"
@@ -490,109 +547,104 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                   size="sm"
                   onClick={() =>
                     append({
+                      id: undefined,
                       name: "",
                       type: "hls",
                       url: "",
                       drmId: "",
                       drmKey: "",
-                      directLinkActive: false,
                       directLink: "",
+                      directLinkActive: false,
                     })
                   }
                 >
                   <PlusIcon />
-                  Add URL
+                  New
                 </Button>
               </div>
 
-              <div className="space-y-3 mt-3">
+              <div className="mt-3 space-y-3">
                 {fields.map((item, index) => (
                   <div
                     key={item.id}
-                    className="rounded-lg border p-3 space-y-3"
+                    className="space-y-3 rounded-lg border p-3"
                   >
                     <div className="flex items-center justify-between">
-                      <span className="text-sm font-medium">
-                        Stream {index + 1}
-                      </span>
+                      <div>
+                        <span className="text-sm font-medium">
+                          Stream {index + 1}
+                        </span>
 
-                      {fields.length > 1 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          className="text-destructive"
-                          onClick={() => remove(index)}
-                        >
-                          <Trash2Icon />
-                          <span className="sr-only">Remove stream</span>
-                        </Button>
-                      )}
+                        {item.id && (
+                          <span className="ml-2 text-xs text-muted-foreground">
+                            Existing
+                          </span>
+                        )}
+                      </div>
+
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-destructive"
+                        onClick={() => remove(index)}
+                      >
+                        <Trash2Icon />
+                        <span className="sr-only">Remove stream</span>
+                      </Button>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <Controller
-                        name={`streams.${index}.name`}
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel>Name</FieldLabel>
+                    <Controller
+                      name={`streams.${index}.name`}
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel>Name</FieldLabel>
 
-                            <Input
-                              {...field}
-                              placeholder="Main Stream"
+                          <Input
+                            {...field}
+                            className="rounded-sm"
+                            aria-invalid={fieldState.invalid}
+                          />
+
+                          {fieldState.invalid && (
+                            <FieldError errors={[fieldState.error]} />
+                          )}
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      name={`streams.${index}.type`}
+                      control={form.control}
+                      render={({ field, fieldState }) => (
+                        <Field data-invalid={fieldState.invalid}>
+                          <FieldLabel>Type</FieldLabel>
+
+                          <Select
+                            value={field.value}
+                            onValueChange={field.onChange}
+                          >
+                            <SelectTrigger
                               className="rounded-sm"
                               aria-invalid={fieldState.invalid}
-                            />
-
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-
-                      <Controller
-                        name={`streams.${index}.type`}
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel>Type</FieldLabel>
-
-                            <Select
-                              value={field.value}
-                              onValueChange={field.onChange}
                             >
-                              <SelectTrigger
-                                className={"rounded-sm"}
-                                aria-invalid={fieldState.invalid}
-                              >
-                                <SelectValue placeholder="Pilih type" />
-                              </SelectTrigger>
+                              <SelectValue placeholder="Pilih type" />
+                            </SelectTrigger>
 
-                              <SelectContent className={"rounded-sm"}>
-                                <SelectItem
-                                  value="hls"
-                                  className={"rounded-sm"}
-                                >
-                                  HLS
-                                </SelectItem>
-                                <SelectItem
-                                  value="dash"
-                                  className={"rounded-sm"}
-                                >
-                                  DASH
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
+                            <SelectContent className="rounded-sm">
+                              <SelectItem value="hls">HLS</SelectItem>
 
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-                    </div>
+                              <SelectItem value="dash">DASH</SelectItem>
+                            </SelectContent>
+                          </Select>
+
+                          {fieldState.invalid && (
+                            <FieldError errors={[fieldState.error]} />
+                          )}
+                        </Field>
+                      )}
+                    />
 
                     <Controller
                       name={`streams.${index}.url`}
@@ -604,8 +656,8 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                           <Input
                             {...field}
                             type="url"
-                            placeholder="https://example.com/stream.m3u8"
                             className="rounded-sm"
+                            placeholder="https://example.com/stream.m3u8"
                             aria-invalid={fieldState.invalid}
                           />
 
@@ -615,117 +667,79 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                         </Field>
                       )}
                     />
+
                     <Controller
                       name={`streams.${index}.drmId`}
                       control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
+                      render={({ field }) => (
+                        <Field>
                           <FieldLabel>DRM ID</FieldLabel>
 
                           <Input
                             {...field}
-                            type="text"
-                            placeholder="..........."
                             className="rounded-sm"
-                            aria-invalid={fieldState.invalid}
+                            placeholder="Optional"
                           />
-
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
                         </Field>
                       )}
                     />
+
                     <Controller
                       name={`streams.${index}.drmKey`}
                       control={form.control}
-                      render={({ field, fieldState }) => (
-                        <Field data-invalid={fieldState.invalid}>
-                          <FieldLabel>DRM KEY</FieldLabel>
+                      render={({ field }) => (
+                        <Field>
+                          <FieldLabel>DRM Key</FieldLabel>
 
                           <Input
                             {...field}
-                            type="text"
-                            placeholder="..........."
                             className="rounded-sm"
-                            aria-invalid={fieldState.invalid}
+                            placeholder="Optional"
                           />
-
-                          {fieldState.invalid && (
-                            <FieldError errors={[fieldState.error]} />
-                          )}
                         </Field>
                       )}
                     />
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      <Controller
-                        name={`streams.${index}.directLink`}
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel>Direct Link</FieldLabel>
 
-                            <Input
-                              {...field}
-                              placeholder="Stream Direct Link"
-                              className="rounded-sm"
-                              aria-invalid={fieldState.invalid}
+                    <Controller
+                      name={`streams.${index}.directLink`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <Field>
+                          <FieldLabel>Direct Link</FieldLabel>
+
+                          <Input
+                            {...field}
+                            type="url"
+                            className="rounded-sm"
+                            placeholder="Optional"
+                          />
+                        </Field>
+                      )}
+                    />
+
+                    <Controller
+                      name={`streams.${index}.directLinkActive`}
+                      control={form.control}
+                      render={({ field }) => (
+                        <Field>
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="checkbox"
+                              checked={field.value}
+                              onChange={field.onChange}
+                              className="h-4 w-4"
                             />
 
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-
-                      <Controller
-                        name={`streams.${index}.directLinkActive`}
-                        control={form.control}
-                        render={({ field, fieldState }) => (
-                          <Field data-invalid={fieldState.invalid}>
-                            <FieldLabel>Status</FieldLabel>
-
-                            <Select
-                              value={field.value ? "true" : "false"}
-                              onValueChange={(value) =>
-                                field.onChange(value === "true")
-                              }
-                            >
-                              <SelectTrigger
-                                className="rounded-sm"
-                                aria-invalid={fieldState.invalid}
-                              >
-                                <SelectValue>
-                                  {field.value ? "Active" : "Non Active"}{" "}
-                                </SelectValue>
-                              </SelectTrigger>
-
-                              <SelectContent className="rounded-sm">
-                                <SelectItem value="true" className="rounded-sm">
-                                  Active
-                                </SelectItem>
-
-                                <SelectItem
-                                  value="false"
-                                  className="rounded-sm"
-                                >
-                                  Non Active
-                                </SelectItem>
-                              </SelectContent>
-                            </Select>
-
-                            {fieldState.invalid && (
-                              <FieldError errors={[fieldState.error]} />
-                            )}
-                          </Field>
-                        )}
-                      />
-                    </div>
+                            <FieldLabel>Enable Direct Link</FieldLabel>
+                          </div>
+                        </Field>
+                      )}
+                    />
                   </div>
                 ))}
               </div>
             </Field>
+
             <Controller
               name="categories"
               control={form.control}
@@ -750,6 +764,7 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                 </Field>
               )}
             />
+
             <Controller
               name="content"
               control={form.control}
@@ -758,12 +773,11 @@ const FormPosts = ({ open, setOpen, article, type }: FormPostsProps) => {
                   <FieldLabel htmlFor="article-form-content">
                     Content
                   </FieldLabel>
-
                   <Textarea
                     {...field}
-                    id="article-form-content"
-                    placeholder="Article content..."
-                    rows={15}
+                    id="article-form-description"
+                    placeholder="Content"
+                    rows={5}
                     className="resize-y rounded-sm"
                     aria-invalid={fieldState.invalid}
                   />
