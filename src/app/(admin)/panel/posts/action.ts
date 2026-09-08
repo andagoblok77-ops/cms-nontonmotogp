@@ -21,6 +21,13 @@ export const deleteArticle = async (postId: string) => {
       where: {
         id: postId,
       },
+      include: {
+        categories: {
+          select: {
+            slug: true,
+          },
+        },
+      },
     });
 
     await prisma.article.delete({
@@ -31,9 +38,18 @@ export const deleteArticle = async (postId: string) => {
 
     updateTag("articles");
     updateTag(`article:${article.slug}`);
+
+    updateTag("categories");
+
+    for (const category of article.categories) {
+      updateTag(`category:${category.slug}`);
+    }
+
     revalidatePath("/panel");
     revalidatePath("/panel/posts");
     revalidatePath("/[...slug]", "page");
+    revalidatePath("/category");
+    revalidatePath("/category/[...slug]", "page");
 
     return {
       success: true,
@@ -44,10 +60,7 @@ export const deleteArticle = async (postId: string) => {
   }
 };
 
-export const saveArticle = async (
-  data: FormData,
-  id?: string | null,
-) => {
+export const saveArticle = async (data: FormData, id?: string | null) => {
   try {
     const title = data.get("title") as string;
     const uploadBy = data.get("uploadBy") as string;
@@ -100,6 +113,11 @@ export const saveArticle = async (
         },
         select: {
           slug: true,
+          categories: {
+            select: {
+              slug: true,
+            },
+          },
         },
       });
 
@@ -227,9 +245,30 @@ export const saveArticle = async (
 
       updateTag(`article:${article.slug}`);
 
+      updateTag("categories");
+
+      const oldCategorySlugs = existingArticle.categories.map(
+        (category) => category.slug,
+      );
+
+      const newCategorySlugs = article.categories.map(
+        (category) => category.slug,
+      );
+
+      const affectedCategorySlugs = new Set([
+        ...oldCategorySlugs,
+        ...newCategorySlugs,
+      ]);
+
+      for (const categorySlug of affectedCategorySlugs) {
+        updateTag(`category:${categorySlug}`);
+      }
+
       revalidatePath("/panel");
       revalidatePath("/panel/posts");
       revalidatePath("/[...slug]", "page");
+      revalidatePath("/category");
+      revalidatePath("/category/[...slug]", "page");
     } else {
       const streamRecords = await Promise.all(
         streams.map((stream) =>
@@ -279,9 +318,17 @@ export const saveArticle = async (
       updateTag("articles");
       updateTag(`article:${article.slug}`);
 
+      updateTag("categories");
+
+      for (const category of article.categories) {
+        updateTag(`category:${category.slug}`);
+      }
+
       revalidatePath("/panel");
       revalidatePath("/panel/posts");
       revalidatePath("/[...slug]", "page");
+      revalidatePath("/category");
+      revalidatePath("/category/[...slug]", "page");
     }
 
     return {
@@ -308,6 +355,13 @@ export const deleteAllArticle = async (ids: string[]) => {
           in: ids,
         },
       },
+      include: {
+        categories: {
+          select: {
+            slug: true,
+          },
+        },
+      },
     });
 
     if (articles.length === 0) {
@@ -324,13 +378,25 @@ export const deleteAllArticle = async (ids: string[]) => {
 
     updateTag("articles");
 
-    articles.forEach((article) => {
+    updateTag("categories");
+
+    const affectedCategorySlugs = new Set<string>();
+
+    for (const article of articles) {
       updateTag(`article:${article.slug}`);
-    });
+      for (const category of article.categories) {
+        affectedCategorySlugs.add(category.slug);
+      }
+    }
+    for (const categorySlug of affectedCategorySlugs) {
+      updateTag(`category:${categorySlug}`);
+    }
 
     revalidatePath("/panel");
     revalidatePath("/panel/posts");
     revalidatePath("/[...slug]", "page");
+    revalidatePath("/category");
+    revalidatePath("/category/[...slug]", "page");
 
     return {
       success: true,

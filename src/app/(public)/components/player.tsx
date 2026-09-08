@@ -12,6 +12,7 @@ import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import AdsSection from "@/components/ads/after-hero";
 import { AdsSectionProps } from "../../../../lib/ads";
+import Link from "next/link";
 
 export type PlayerSite = Prisma.SiteSettingGetPayload<{
   select: {
@@ -125,6 +126,28 @@ export default function Player({
         activeServer={activeServer}
         onServerChange={setActiveServer}
       />
+      <p className="mb-1 text-sm font-black uppercase mt-10">Category</p>
+      {posts.categories.length > 0 && (
+        <div className="mb-4 flex min-h-8 flex-wrap gap-2 mt-1">
+          {posts.categories.map((category) => (
+            <Link key={category.slug} href={`/category/${category.slug}`}>
+              <span
+                key={category.slug}
+                className="
+                          border-2 border-black
+                          bg-[#ff90e8]
+                          px-2 py-1
+                          text-xs
+                          font-black
+                          uppercase
+                        "
+              >
+                {category.name}
+              </span>
+            </Link>
+          ))}
+        </div>
+      )}
     </section>
   );
 }

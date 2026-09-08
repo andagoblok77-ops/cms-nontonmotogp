@@ -1,11 +1,80 @@
+
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { PlayIcon } from "lucide-react";
-
-import { format } from "date-fns";
 import { getCategory } from "../../../../../lib/category";
-import { id } from "date-fns/locale";
 import { ArticleCard } from "../../components/article-card";
+import { Metadata } from "next";
+import { getSiteSeo } from "../../../../../lib/site";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+
+  const [result, site] = await Promise.all([
+    getCategory(slug, 1),
+    getSiteSeo(),
+  ]);
+
+  if (!result.category) {
+    return {};
+  }
+
+  const categoryName = result.category.name;
+
+  const title = `${categoryName} - ${site.siteName}`;
+
+  const description =
+    `Browse the latest articles in the ${categoryName} category on ${site.siteName}.`;
+
+  const canonical = `${site.siteUrl}/category/${result.category.slug}`;
+
+  return {
+    title,
+
+    description,
+
+    alternates: {
+      canonical,
+    },
+
+    robots: {
+      index: true,
+      follow: true,
+    },
+
+    openGraph: {
+      type: "website",
+      title,
+      description,
+      url: canonical,
+      siteName: site.siteName,
+
+      images: site.ogImage
+        ? [
+            {
+              url: site.ogImage,
+              width: 1200,
+              height: 630,
+              alt: title,
+            },
+          ]
+        : undefined,
+    },
+
+    twitter: {
+      card: "summary_large_image",
+      title,
+      description,
+
+      images: site.ogImage
+        ? [site.ogImage]
+        : undefined,
+    },
+  };
+}
 
 export default async function CategoryPage({
   params,
@@ -29,11 +98,13 @@ export default async function CategoryPage({
   }
 
   return (
-    <main className=" bg-[#FFFDF5] px-4 py-10">
+    <main className="bg-[#FFFDF5] px-4 py-10">
       <div className="mx-auto max-w-6xl px-4">
         {/* Header */}
         <div className="mb-10 border-4 border-black bg-[#4d7aff] p-6 shadow-[7px_7px_0_#000]">
-          <p className="mb-2 text-sm font-black uppercase">Category</p>
+          <p className="mb-2 text-sm font-black uppercase">
+            Category
+          </p>
 
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
@@ -41,7 +112,9 @@ export default async function CategoryPage({
                 {category.name}
               </h1>
 
-              <p className="mt-2 font-bold">{total} artikel</p>
+              <p className="mt-2 font-bold">
+                {total} Articles
+              </p>
             </div>
 
             <Link
@@ -52,7 +125,7 @@ export default async function CategoryPage({
                 items-center
                 border-2 border-black
                 bg-white
-                px-4 py-2
+                px-3 py-0.5
                 font-black
                 uppercase
                 shadow-[4px_4px_0_#000]
@@ -62,7 +135,7 @@ export default async function CategoryPage({
                 hover:shadow-none
               "
             >
-              Semua Artikel
+              All Articles
             </Link>
           </div>
         </div>
@@ -72,7 +145,10 @@ export default async function CategoryPage({
           <>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {category.articles.map((article) => (
-                <ArticleCard key={article.id} article={article} />
+                <ArticleCard
+                  key={article.id}
+                  article={article}
+                />
               ))}
             </div>
 
@@ -88,7 +164,7 @@ export default async function CategoryPage({
                       px-4 py-2
                       font-black
                       uppercase
-                      shadow-[4px_4px_0_#000]
+                      shadow-[4px_4pxpx_0_#000]
                       transition-all
                       hover:translate-x-1
                       hover:translate-y-1
@@ -144,10 +220,11 @@ export default async function CategoryPage({
               shadow-[7px_7px_0_#000]
             "
           >
-            Belum ada artikel di kategori ini.
+            There are no articles in this category yet.
           </div>
         )}
       </div>
     </main>
   );
 }
+

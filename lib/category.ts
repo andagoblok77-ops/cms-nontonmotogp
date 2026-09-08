@@ -63,3 +63,19 @@ export const getCategory = (slug: string, page = 1) =>
       revalidate: 7200,
     },
   )();
+
+export const getAllCategory = unstable_cache(
+  async () => {
+    return prisma.category.findMany({
+      select: {
+        name: true,
+        slug: true,
+      },
+    });
+  },
+  ["categories"],
+  {
+    tags: ["categories"],
+    revalidate: 7200,
+  },
+);
