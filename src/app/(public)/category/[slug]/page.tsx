@@ -1,10 +1,10 @@
-
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getCategory } from "../../../../../lib/category";
 import { ArticleCard } from "../../components/article-card";
 import { Metadata } from "next";
 import { getSiteSeo } from "../../../../../lib/site";
+import { List } from "lucide-react";
 
 export async function generateMetadata({
   params,
@@ -26,8 +26,7 @@ export async function generateMetadata({
 
   const title = `${categoryName} - ${site.siteName}`;
 
-  const description =
-    `Browse the latest articles in the ${categoryName} category on ${site.siteName}.`;
+  const description = `Browse the latest articles in the ${categoryName} category on ${site.siteName}.`;
 
   const canonical = `${site.siteUrl}/category/${result.category.slug}`;
 
@@ -69,9 +68,7 @@ export async function generateMetadata({
       title,
       description,
 
-      images: site.ogImage
-        ? [site.ogImage]
-        : undefined,
+      images: site.ogImage ? [site.ogImage] : undefined,
     },
   };
 }
@@ -102,7 +99,8 @@ export default async function CategoryPage({
       <div className="mx-auto max-w-6xl px-4">
         {/* Header */}
         <div className="mb-10 border-4 border-black bg-[#4d7aff] p-6 shadow-[7px_7px_0_#000]">
-          <p className="mb-2 text-sm font-black uppercase">
+          <p className="mb-2 text-sm font-black uppercase flex items-center gap-1">
+            <List className="size-[1em]" />
             Category
           </p>
 
@@ -112,9 +110,7 @@ export default async function CategoryPage({
                 {category.name}
               </h1>
 
-              <p className="mt-2 font-bold">
-                {total} Articles
-              </p>
+              <p className="mt-2 font-bold">{total} Articles</p>
             </div>
 
             <Link
@@ -145,10 +141,7 @@ export default async function CategoryPage({
           <>
             <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-3">
               {category.articles.map((article) => (
-                <ArticleCard
-                  key={article.id}
-                  article={article}
-                />
+                <ArticleCard key={article.id} article={article} />
               ))}
             </div>
 
@@ -227,4 +220,3 @@ export default async function CategoryPage({
     </main>
   );
 }
-

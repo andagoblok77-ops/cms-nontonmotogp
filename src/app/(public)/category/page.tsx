@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { getAllCategory } from "../../../../lib/category";
 import { getSiteSeo } from "../../../../lib/site";
+import { List } from "lucide-react";
 
 export async function generateMetadata(): Promise<Metadata> {
   const site = await getSiteSeo();
@@ -70,7 +71,11 @@ export default async function CategoryPage() {
     <main className="bg-[#FFFDF5] px-4 py-10">
       <div className="mx-auto max-w-6xl px-4">
         {/* Header */}
-        <p className="mb-2 text-sm font-black uppercase">Category</p>
+        <h1 className="mt-2 flex items-center gap-1 text-xl  sm:text-2xl font-black tracking-tighter ">
+                          <List className="size-[1em]" />
+                         Category
+                        </h1>
+
 
         {categories.length > 0 ? (
           <div className="mt-4 mb-4 flex min-h-8 flex-wrap gap-2">
