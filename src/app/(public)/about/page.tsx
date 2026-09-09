@@ -1,8 +1,16 @@
 import { notFound } from "next/navigation";
 import { getPage } from "../../../../lib/page";
+import { Metadata } from "next";
 
-export default async function DisclaimerPage() {
-  const page = await getPage("disclaimer");
+export async function generateMetadata(): Promise<Metadata> {
+  const page = await getPage("about");
+  return {
+    title: page?.title,
+    description: page?.content,
+  };
+}
+export default async function AboutPage() {
+  const page = await getPage("about");
 
   if (!page) {
     notFound();
@@ -13,7 +21,7 @@ export default async function DisclaimerPage() {
       <div className="border-4 border-black bg-[#f5f0e6] p-6 shadow-[8px_8px_0_0_#000] sm:p-10">
         <div className="mb-8 border-b-4 border-black pb-6">
           <span className="mb-3 inline-block border-2 border-black bg-[#ffde59] px-3 py-1 font-black uppercase shadow-[3px_3px_0_0_#000]">
-            Disclaimer
+            About
           </span>
 
           <h1 className="text-xl font-black uppercase sm:text-3xlxl">
