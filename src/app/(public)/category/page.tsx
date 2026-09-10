@@ -68,14 +68,13 @@ export default async function CategoryPage() {
   }
 
   return (
-    <main className="bg-[#FFFDF5] px-4 py-10">
-      <div className="mx-auto max-w-6xl px-4">
+    <main className="min-h-[calc(100vh-400px)] bg-[#FFFDF5] px-4 py-10">
+      <div className="mx-auto w-full max-w-6xl px-4">
         {/* Header */}
         <h1 className="mt-2 flex items-center gap-1 text-xl  sm:text-2xl font-black tracking-tighter ">
-                          <List className="size-[1em]" />
-                         Category
-                        </h1>
-
+          <List className="size-[1em]" />
+          Category
+        </h1>
 
         {categories.length > 0 ? (
           <div className="mt-4 mb-4 flex min-h-8 flex-wrap gap-2">
