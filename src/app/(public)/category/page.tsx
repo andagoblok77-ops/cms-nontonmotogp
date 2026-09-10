@@ -68,7 +68,7 @@ export default async function CategoryPage() {
   }
 
   return (
-    <main className="min-h-[calc(100vh-400px)] bg-[#FFFDF5] px-4 py-10">
+    <main className="min-h-96 h-auto bg-[#FFFDF5] px-4 py-10">
       <div className="mx-auto w-full max-w-6xl px-4">
         {/* Header */}
         <h1 className="mt-2 flex items-center gap-1 text-xl  sm:text-2xl font-black tracking-tighter ">

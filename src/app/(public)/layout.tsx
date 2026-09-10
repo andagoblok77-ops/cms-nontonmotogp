@@ -90,7 +90,7 @@ export default async function PublicLayout({
   const [site, ads] = await Promise.all([getSiteSetting(), getAds()]);
 
   return (
-    <>
+    <div className="bg-[#FFFDF5] h-screen">
       {/* Google Analytics */}
       {process.env.VERCEL_ENV === "production" && site.googleAnalyticsId && (
         <>
@@ -143,6 +143,6 @@ export default async function PublicLayout({
           .map((ad) => (
             <Script key={ad.id} src={ad.url} strategy="lazyOnload" />
           ))}
-    </>
+    </div>
   );
 }
