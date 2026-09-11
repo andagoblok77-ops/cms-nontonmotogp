@@ -293,7 +293,11 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
   return (
     <div className="w-full ">
       <div className="relative w-full aspect-video overflow-hidden rounded-none bg-black mb-7">
-        <div ref={playerRef} className="absolute inset-0 h-full w-full" />
+        <div
+          ref={playerRef}
+          className="absolute inset-0 h-full w-full"
+          title={name}
+        />
 
         {playerReady && showPlayButton && (
           <button
