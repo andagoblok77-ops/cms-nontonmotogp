@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Play } from "lucide-react";
 
 interface Props {
   name: string;
@@ -11,6 +12,8 @@ interface Props {
 }
 
 interface ClapprPlayer {
+  play?: () => void;
+  pause?: () => void;
   stop?: () => void;
   destroy?: () => void;
 }
@@ -63,10 +66,16 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
   const playerRef = useRef<HTMLDivElement>(null);
   const instanceRef = useRef<ClapprPlayer | null>(null);
 
+  const [playerReady, setPlayerReady] = useState(false);
+  const [showPlayButton, setShowPlayButton] = useState(true);
+
   useEffect(() => {
     if (!playerRef.current) return;
 
     let cancelled = false;
+
+    setPlayerReady(false);
+    setShowPlayButton(true);
 
     const loadScriptOnce = (src: string) =>
       new Promise<void>((resolve, reject) => {
@@ -89,9 +98,13 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
             reject(new Error(`Gagal memuat script: ${src}`));
           };
 
-          existing.addEventListener("load", handleLoad, { once: true });
+          existing.addEventListener("load", handleLoad, {
+            once: true,
+          });
 
-          existing.addEventListener("error", handleError, { once: true });
+          existing.addEventListener("error", handleError, {
+            once: true,
+          });
 
           return;
         }
@@ -128,18 +141,18 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
       if (playerRef.current) {
         playerRef.current.innerHTML = "";
       }
+
+      setPlayerReady(false);
     };
 
     const init = async () => {
       try {
         destroyPlayer();
 
-  
         await loadScriptOnce(
           "https://cdn.jsdelivr.net/npm/clappr@0.3.13/dist/clappr.min.js",
         );
 
-  
         await loadScriptOnce(
           "https://cdn.jsdelivr.net/npm/shaka-player@3.3.7/dist/shaka-player.compiled.js",
         );
@@ -148,10 +161,11 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
           "https://cdn.jsdelivr.net/npm/dash-shaka-playback@3.7.1/dist/dash-shaka-playback.js",
         );
 
-  
         await loadScriptOnce(
           "https://cdn.jsdelivr.net/npm/clappr-level-selector-plugin@0.2.1/dist/level-selector.min.js",
         );
+
+        await new Promise((resolve) => setTimeout(resolve, 100));
 
         if (cancelled || !playerRef.current) {
           return;
@@ -160,7 +174,6 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
         const win = window as WindowWithPlayers;
 
         const Clappr = win.Clappr;
-
         const DashShakaPlayback = win.DashShakaPlayback;
 
         const LevelSelector =
@@ -188,9 +201,8 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
           return;
         }
 
-        const cleanDrmId = drmId?.trim().toLowerCase();
-
-        const cleanDrmKey = drmKey?.trim().toLowerCase();
+        const cleanDrmId = drmId?.trim();
+        const cleanDrmKey = drmKey?.trim();
 
         const shakaConfiguration =
           cleanDrmId && cleanDrmKey
@@ -202,6 +214,7 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
                 },
               }
             : undefined;
+
         const player = new Clappr.Player({
           parent: playerRef.current,
 
@@ -210,13 +223,12 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
           width: "100%",
           height: "100%",
 
-          autoPlay: true,
+          autoPlay: false,
           mute: false,
 
           ...(poster ? { poster } : {}),
 
           watermark: poster ?? "",
-
           position: "top-right",
 
           plugins: [DashShakaPlayback, LevelSelector],
@@ -248,8 +260,12 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
         }
 
         instanceRef.current = player;
+
+        setPlayerReady(true);
+
+        console.log("DASH 9: player ready");
       } catch (error) {
-        console.error("Gagal menginisialisasi DASH Player:", error);
+        console.error("❌ Gagal menginisialisasi DASH Player:", error);
       }
     };
 
@@ -261,14 +277,68 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
     };
   }, [url, drmId, drmKey, poster]);
 
-  return (
-    <div className="w-full">
-      {name && <h2 className="mb-3 text-lg font-semibold">{name}</h2>}
+  const handlePlay = () => {
+    const player = instanceRef.current;
 
-      <div
-        ref={playerRef}
-        className="w-full aspect-video py-1 overflow-hidden rounded-2xl bg-black"
-      />
+    if (!player) {
+      console.warn("Player belum siap.");
+      return;
+    }
+
+    setShowPlayButton(false);
+
+    player.play?.();
+  };
+
+  return (
+    <div className="w-full ">
+      {name && <h2 className=" text-lg font-semibold">{name}</h2>}
+
+      <div className="relative w-full aspect-video overflow-hidden rounded-none bg-black mb-7">
+        <div ref={playerRef} className="absolute inset-0 h-full w-full" />
+
+        {playerReady && showPlayButton && (
+          <button
+            type="button"
+            onClick={handlePlay}
+            className="
+                    absolute
+                    left-1/2
+                    top-1/2
+                    z-50
+                    flex
+                    h-20
+                    w-20
+                    -translate-x-1/2
+                    -translate-y-1/2
+                    items-center
+                    justify-center
+
+                    border-4
+                    border-black
+
+                    bg-[#ff90e8]
+                    text-black
+
+                    shadow-[7px_7px_0px_0px_#000]
+
+                    transition-all
+                    duration-100
+
+                    hover:translate-x-[calc(-50%+2px)]
+                    hover:translate-y-[calc(-50%+2px)]
+                    hover:shadow-[5px_5px_0px_0px_#000]
+
+                    active:translate-x-[calc(-50%+7px)]
+                    active:translate-y-[calc(-50%+7px)]
+                    active:shadow-none
+                  "
+            aria-label="PLAY"
+          >
+            <Play className="ml-1 h-7 w-7 fill-current" />
+          </button>
+        )}
+      </div>
     </div>
   );
 }

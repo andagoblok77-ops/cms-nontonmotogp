@@ -42,6 +42,7 @@ export default function Player({
   );
 
   const createdAt = new Date(posts.createdAt);
+
   return (
     <section className="mx-auto mb-5 w-full max-w-6xl px-4 py-7 ">
       <h2
