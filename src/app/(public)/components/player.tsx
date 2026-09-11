@@ -47,19 +47,19 @@ export default function Player({
     <section className="mx-auto mb-5 w-full max-w-6xl px-4 py-7 ">
       <h2
         className="
-    mb-1
-    flex
-    sm:min-h-14
-    items-start
-    gap-0.5
-    sm:gap-1
-    text-base
-    font-black
-    leading-tight
-    tracking-tight
-    sm:items-center
-    sm:text-2xl
-  "
+          mb-1
+          flex
+          sm:min-h-14
+          items-start
+          gap-0.5
+          sm:gap-1
+          text-base
+          font-black
+          leading-tight
+          tracking-tight
+          sm:items-center
+          sm:text-2xl
+        "
       >
         <TextIcon className="w-6" />
         {posts.title}

@@ -292,8 +292,6 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
 
   return (
     <div className="w-full ">
-      {name && <h2 className=" text-lg font-semibold">{name}</h2>}
-
       <div className="relative w-full aspect-video overflow-hidden rounded-none bg-black mb-7">
         <div ref={playerRef} className="absolute inset-0 h-full w-full" />
 
@@ -305,7 +303,7 @@ export default function Dash({ name, url, drmId, drmKey, poster }: Props) {
                     absolute
                     left-1/2
                     top-1/2
-                    z-50
+                    z-10
                     flex
                     h-20
                     w-20
