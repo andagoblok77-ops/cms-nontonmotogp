@@ -57,37 +57,50 @@ export function ServerButtons({
       </div>
 
       <div className="flex flex-wrap gap-3">
-        {servers.map((server) => {
-          const active = activeServer === server.name;
+        {[...servers]
+          .sort((a, b) => {
+            const numA = a.name.match(/\d+/);
+            const numB = b.name.match(/\d+/);
 
-          return (
-            <button
-              key={server.name}
-              type="button"
-              onClick={() =>
-                onClickServer(
-                  server.name,
-                  server.directLink ?? "",
-                  server.directLinkActive ?? false,
-                )
-              }
-              className={`
-                border-2 border-black
-                px-4 py-2
-                text-sm font-black
-                transition-all
-                flex gap-1 items-center
-                ${
-                  active
-                    ? "translate-x-1 translate-y-1 bg-[#4d7aff] text-black shadow-none"
-                    : "bg-white text-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#4d7aff] hover:shadow-[2px_2px_0px_0px_#000]"
+            if (numA && numB) {
+              return Number(numA[0]) - Number(numB[0]);
+            }
+            if (numA) return -1;
+            if (numB) return 1;
+
+            return a.name.localeCompare(b.name);
+          })
+          .map((server) => {
+            const active = activeServer === server.name;
+
+            return (
+              <button
+                key={server.name}
+                type="button"
+                onClick={() =>
+                  onClickServer(
+                    server.name,
+                    server.directLink ?? "",
+                    server.directLinkActive ?? false,
+                  )
                 }
-              `}
-            >
-              <Server className="w-5 h-5" /> {server.name}
-            </button>
-          );
-        })}
+                className={`
+          border-2 border-black
+          px-4 py-2
+          text-sm font-black
+          transition-all
+          flex gap-1 items-center
+          ${
+            active
+              ? "translate-x-1 translate-y-1 bg-[#4d7aff] text-black shadow-none"
+              : "bg-white text-black shadow-[4px_4px_0px_0px_#000] hover:translate-x-0.5 hover:translate-y-0.5 hover:bg-[#4d7aff] hover:shadow-[2px_2px_0px_0px_#000]"
+          }
+        `}
+              >
+                <Server className="w-5 h-5" /> {server.name}
+              </button>
+            );
+          })}
       </div>
     </div>
   );

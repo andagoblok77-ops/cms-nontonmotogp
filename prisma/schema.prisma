@@ -72,10 +72,13 @@ enum AdPosition {
   body
 }
 
+
 model AdLink {
   id            String      @id @default(uuid())
   name          String
   url           String
+  scriptCode    String?     @db.Text
+  adsPublisher  AdsPublisher @default(adsterra)     
   order         Int         @default(0)
   position      AdPosition  @default(body)
   isActive      Boolean     @default(true)
@@ -86,6 +89,11 @@ model AdLink {
 
   @@index([siteSettingId])
   @@map("ad_links")
+}
+enum AdsPublisher {
+  adsterra
+  mgid
+  monetag
 }
 
 model SocialLink {
