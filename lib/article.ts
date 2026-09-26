@@ -110,6 +110,7 @@ export const getArticle = (slug: string) =>
               drmKey: true,
               directLink: true,
               directLinkActive: true,
+              isActive: true,
             },
           },
           categories: {

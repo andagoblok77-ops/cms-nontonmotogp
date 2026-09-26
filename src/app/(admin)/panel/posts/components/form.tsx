@@ -69,7 +69,8 @@ const formSchema = z.object({
     }),
   ),
 
-  content: z.string().optional(),
+  content: z.string().max(50000, "Article is too long, maximum 50,000 characters").optional()
+
 });
 
 type FormPostsProps = {

@@ -336,20 +336,18 @@ const siteSettingData: Prisma.SiteSettingCreateInput = {
   },
 
   hero: {
-    create: [
-      {
-        badge: "LIVE STREAMING",
-        title: "LIVE",
-        subtitle: "MOTOGP",
-        year: "2026",
-        description:
-          "LIVEMOTOGP adalah situs untuk nonton live streaming MotoGP 2026 terbaru dengan link siaran langsung MotoGP, Moto2, Moto3, dan WSBK 2026 kualitas HD.",
-        primaryButtonText: "TONTON SEKARANG",
-        primaryButtonUrl: "/2026/08/23/live-streaming-motogp",
-        secondaryButtonText: "Telegram",
-        secondaryButtonUrl: "https://t.me/+qMM92ZK59mVmYzg1",
-      },
-    ],
+    create: {
+      badge: "LIVE STREAMING",
+      title: "LIVE",
+      subtitle: "MOTOGP",
+      year: "2026",
+      description:
+        "MOTOGPSTREAMS adalah situs untuk nonton live streaming MotoGP 2026 terbaru dengan link siaran langsung MotoGP, Moto2, Moto3, dan WSBK 2026 kualitas HD.",
+      primaryButtonText: "TONTON SEKARANG",
+      primaryButtonUrl: "/2026/08/23/live-streaming-motogp",
+      secondaryButtonText: "Telegram",
+      secondaryButtonUrl: "https://t.me/+qMM92ZK59mVmYzg1",
+    },
   },
 };
 

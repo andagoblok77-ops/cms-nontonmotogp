@@ -7,7 +7,7 @@ import type { Prisma } from "@/generated/prisma/client";
 import { Posts } from "../[...slug]/page";
 import Hls from "./hls";
 import Dash from "./dash";
-import { Calendar, TextIcon, UserIcon } from "lucide-react";
+import { AlertCircleIcon, Calendar, TextIcon, UserIcon } from "lucide-react";
 import { format } from "date-fns";
 import { id } from "date-fns/locale";
 import AdsSection from "@/components/ads/after-hero";
@@ -92,7 +92,7 @@ export default function Player({
       >
         <div className="relative aspect-video w-full p-0 m-0 ">
           {/* player */}
-          {activeStream ? (
+          {activeStream && activeStream.isActive ? (
             <div className="flex h-full items-center justify-center p-0 m-0">
               {activeStream.type == "hls" ? (
                 <Hls
@@ -111,8 +111,8 @@ export default function Player({
               )}
             </div>
           ) : (
-            <div className="flex h-full items-center justify-center text-white">
-              Stream tidak tersedia
+            <div className="flex h-full items-center justify-center text-white gap-1 uppercase">
+              <AlertCircleIcon /> Stream unavailable
             </div>
           )}
         </div>
@@ -126,6 +126,12 @@ export default function Player({
         servers={posts.streams}
         activeServer={activeServer}
         onServerChange={setActiveServer}
+      />
+      <div
+        className="w-full mt-7"
+        dangerouslySetInnerHTML={{
+          __html: posts.content ?? "",
+        }}
       />
       <p className="mb-1 text-sm font-black uppercase mt-10">Category</p>
       {posts.categories.length > 0 && (

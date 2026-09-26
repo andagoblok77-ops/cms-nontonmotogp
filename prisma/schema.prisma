@@ -1,7 +1,11 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
 
-// Get a free hosted Postgres database in seconds: `npx create-db`
+datasource db {
+  provider = "postgresql"
+}
 
 model AdminUser {
   id        String   @id @default(cuid())
@@ -13,63 +17,46 @@ model AdminUser {
 }
 
 model SiteSetting {
-  id          String  @id @default(cuid())
-  siteName    String
-  title       String
-  description String?
-  siteUrl     String?
-  logo        String?
-  favicon     String?
-  ogImage     String?
-
-  hero HeroSetting?
-
-  playerNoticeTitle       String?
+  id                      String       @id @default(cuid())
+  siteName                String
+  title                   String
+  description             String?
+  siteUrl                 String?
+  logo                    String?
+  favicon                 String?
+  ogImage                 String?
+  metaTitle               String?
+  metaDescription         String?
+  createdAt               DateTime     @default(now())
+  updatedAt               DateTime     @updatedAt
   playerNoticeDescription String?
-
-  googleAnalyticsId      String?
-  googleSiteVerification String?
-
-  telegramTitle       String?
-  telegramDescription String?
-
-  socialLinks SocialLink[]
-  navbarItems NavbarItem[]
-  footerItems FooterItem[]
-  adLinks     AdLink[]
-
-  metaTitle       String?
-  metaDescription String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  playerNoticeTitle       String?
+  telegramDescription     String?
+  telegramTitle           String?
+  googleAnalyticsId       String?
+  googleSiteVerification  String?
+  hero                    HeroSetting?
+  adLinks                 AdLink[]
+  footerItems             FooterItem[]
+  navbarItems             NavbarItem[]
+  socialLinks             SocialLink[]
 }
 
 model HeroSetting {
-  id String @id @default(cuid())
-
-  siteId String      @unique
-  site   SiteSetting @relation(fields: [siteId], references: [id], onDelete: Cascade)
-
-  badge       String?
-  title       String?
-  subtitle    String?
-  year        String?
-  description String?
-
-  primaryButtonText String?
-  primaryButtonUrl  String?
-
+  id                  String      @id @default(cuid())
+  siteId              String      @unique
+  badge               String?
+  title               String?
+  subtitle            String?
+  year                String?
+  description         String?
+  primaryButtonText   String?
+  primaryButtonUrl    String?
   secondaryButtonText String?
   secondaryButtonUrl  String?
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-}
-
-enum AdPosition {
-  head
-  body
+  createdAt           DateTime    @default(now())
+  updatedAt           DateTime    @updatedAt
+  site                SiteSetting @relation(fields: [siteId], references: [id], onDelete: Cascade)
 }
 
 model AdLink {
@@ -77,63 +64,139 @@ model AdLink {
   name          String
   url           String
   order         Int         @default(0)
-  position      AdPosition  @default(body)
-  isActive      Boolean     @default(true)
   siteSettingId String
-  siteSetting   SiteSetting @relation(fields: [siteSettingId], references: [id], onDelete: Cascade)
   createdAt     DateTime    @default(now())
   updatedAt     DateTime    @updatedAt
+  position      AdPosition  @default(body)
+  isActive      Boolean     @default(true)
+  siteSetting   SiteSetting @relation(fields: [siteSettingId], references: [id], onDelete: Cascade)
 
   @@index([siteSettingId])
   @@map("ad_links")
 }
 
 model SocialLink {
-  id       String         @id @default(uuid())
-  name     String
-  platform SocialPlatform
-  url      String
-
+  id            String         @id @default(uuid())
+  name          String
+  platform      SocialPlatform
+  url           String
   siteSettingId String
-  siteSetting   SiteSetting @relation(fields: [siteSettingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  siteSetting   SiteSetting    @relation(fields: [siteSettingId], references: [id], onDelete: Cascade)
 
   @@index([siteSettingId])
   @@map("social_links")
 }
 
 model NavbarItem {
-  id    String @id @default(uuid())
-  name  String
-  url   String
-  order Int    @default(0)
-
+  id            String      @id @default(uuid())
+  name          String
+  url           String
+  order         Int         @default(0)
   siteSettingId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   siteSetting   SiteSetting @relation(fields: [siteSettingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([siteSettingId])
   @@map("navbar_items")
 }
 
 model FooterItem {
-  id    String @id @default(uuid())
-  name  String
-  url   String
-  order Int    @default(0)
-
+  id            String      @id @default(uuid())
+  name          String
+  url           String
+  order         Int         @default(0)
   siteSettingId String
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
   siteSetting   SiteSetting @relation(fields: [siteSettingId], references: [id], onDelete: Cascade)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@index([siteSettingId])
   @@map("footer_items")
+}
+
+model AdWidget {
+  id         String           @id @default(uuid())
+  name       String
+  htmlCode   String?
+  scriptCode String?
+  position   AdWidgetPosition
+  order      Int              @default(0)
+  isActive   Boolean          @default(true)
+  height     Int              @default(90)
+  maxWidth   String           @default("md")
+  mobileOnly Boolean          @default(true)
+  showClose  Boolean          @default(true)
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+
+  @@index([position, isActive])
+  @@map("ad_widgets")
+}
+
+model Article {
+  id              String        @id @default(uuid())
+  title           String
+  slug            String        @unique
+  metaDescription String?
+  content         String
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  poster          String?
+  thumbnail       String?
+  status          StatusArticle @default(publish)
+  uploadBy        String        @default("X")
+  categories      Category[]    @relation("ArticleToCategory")
+  streams         Stream[]      @relation("ArticleToStream")
+
+  @@index([createdAt])
+  @@map("articles")
+}
+
+model Category {
+  id        String    @id @default(uuid())
+  name      String    @unique
+  slug      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  articles  Article[] @relation("ArticleToCategory")
+
+  @@map("categories")
+}
+
+model Stream {
+  id               String     @id @default(uuid())
+  name             String
+  type             StreamType
+  url              String
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  drmId            String?
+  drmKey           String?
+  directLink       String?    @default("")
+  directLinkActive Boolean    @default(false)
+  isActive         Boolean    @default(true)
+  articles         Article[]  @relation("ArticleToStream")
+
+  @@map("streams")
+}
+
+model Page {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([slug])
+}
+
+enum AdPosition {
+  head
+  body
 }
 
 enum AdWidgetPosition {
@@ -143,28 +206,6 @@ enum AdWidgetPosition {
   sidebar
   floating
   footer
-}
-
-model AdWidget {
-  id         String  @id @default(uuid())
-  name       String
-  htmlCode   String? @db.Text
-  scriptCode String? @db.Text
-
-  position AdWidgetPosition
-  order    Int              @default(0)
-  isActive Boolean          @default(true)
-
-  height     Int     @default(90)
-  maxWidth   String  @default("md")
-  mobileOnly Boolean @default(true)
-  showClose  Boolean @default(true)
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([position, isActive])
-  @@map("ad_widgets")
 }
 
 enum SocialPlatform {
@@ -177,85 +218,12 @@ enum SocialPlatform {
   pinterest
 }
 
-model Article {
-  id              String        @id @default(uuid())
-  title           String
-  slug            String        @unique
-  metaDescription String?
-  thumbnail       String?
-  poster          String?
-  status          StatusArticle @default(publish)
-  content         String
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-
-  uploadBy String @default("X")
-
-  categories Category[]
-  streams    Stream[]
-
-  @@index([createdAt])
-  @@map("articles")
-}
-
 enum StatusArticle {
   publish
   draft
 }
 
-model Category {
-  id        String   @id @default(uuid())
-  name      String   @unique
-  slug      String   @unique
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  articles Article[]
-
-  @@map("categories")
-}
-
-model Stream {
-  id               String     @id @default(uuid())
-  name             String
-  type             StreamType
-  url              String
-  drmId            String?
-  drmKey           String?
-  directLink       String?    @default("")
-  directLinkActive Boolean    @default(false)
-
-  articles Article[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@map("streams")
-}
-
-
-
-model Page {
-  id        String   @id @default(cuid())
-  slug      String   @unique
-  title     String
-  content   String   @db.Text
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@index([slug])
-}
-
 enum StreamType {
   hls
   dash
-}
-
-generator client {
-  provider = "prisma-client"
-  output   = "../src/generated/prisma"
-}
-
-datasource db {
-  provider = "postgresql"
 }

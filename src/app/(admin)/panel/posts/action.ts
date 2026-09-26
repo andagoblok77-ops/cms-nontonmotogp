@@ -271,8 +271,25 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
       revalidatePath("/category/[...slug]", "page");
     } else {
       const streamRecords = await Promise.all(
-        streams.map((stream) =>
-          prisma.stream.create({
+        streams.map(async (stream) => {
+          if (stream.id) {
+            return prisma.stream.update({
+              where: {
+                id: stream.id,
+              },
+              data: {
+                name: stream.name,
+                type: stream.type,
+                url: stream.url,
+                drmId: stream.drmId,
+                drmKey: stream.drmKey,
+                directLink: stream.directLink,
+                directLinkActive: stream.directLinkActive,
+              },
+            });
+          }
+
+          return prisma.stream.create({
             data: {
               name: stream.name,
               type: stream.type,
@@ -282,8 +299,8 @@ export const saveArticle = async (data: FormData, id?: string | null) => {
               directLink: stream.directLink,
               directLinkActive: stream.directLinkActive,
             },
-          }),
-        ),
+          });
+        }),
       );
 
       article = await prisma.article.create({

@@ -32,10 +32,7 @@ const formSchema = z.object({
 
   type: z.enum(["hls", "dash"]),
 
-  url: z
-    .string()
-    .min(1, "URL is required")
-    .url("Please enter a valid URL."),
+  url: z.string().min(1, "URL is required").url("Please enter a valid URL."),
 
   drmId: z.string().optional(),
 
@@ -44,6 +41,7 @@ const formSchema = z.object({
   directLink: z.string().optional(),
 
   directLinkActive: z.boolean(),
+  isActive: z.boolean(),
 });
 
 type FormStreamProps = {
@@ -59,15 +57,11 @@ type FormStreamProps = {
     drmKey: string | null;
     directLink: string | null;
     directLinkActive: boolean;
+    isActive: boolean;
   } | null;
 };
 
-const FormStream = ({
-  open,
-  setOpen,
-  stream,
-  type,
-}: FormStreamProps) => {
+const FormStream = ({ open, setOpen, stream, type }: FormStreamProps) => {
   const router = useRouter();
 
   const defaultValues = {
@@ -78,6 +72,7 @@ const FormStream = ({
     drmKey: "",
     directLink: "",
     directLinkActive: false,
+    isActive: true,
   };
 
   const form = useForm<z.infer<typeof formSchema>>({
@@ -95,11 +90,8 @@ const FormStream = ({
       formData.append("drmId", data.drmId ?? "");
       formData.append("drmKey", data.drmKey ?? "");
       formData.append("directLink", data.directLink ?? "");
-      formData.append(
-        "directLinkActive",
-        String(data.directLinkActive),
-      );
-
+      formData.append("directLinkActive", String(data.directLinkActive));
+      formData.append("isActive", String(data.isActive));
       const { message } = await saveStream(
         formData,
         type === "edit" ? stream?.id : null,
@@ -144,6 +136,7 @@ const FormStream = ({
         drmKey: stream.drmKey ?? "",
         directLink: stream.directLink ?? "",
         directLinkActive: stream.directLinkActive ?? false,
+        isActive: stream.isActive ?? false,
       });
     }
   }, [open, type, stream, form]);
@@ -163,9 +156,7 @@ const FormStream = ({
             className="order-1 sm:order-3"
             disabled={form.formState.isSubmitting}
           >
-            {form.formState.isSubmitting
-              ? "Saving..."
-              : "Save Stream"}
+            {form.formState.isSubmitting ? "Saving..." : "Save Stream"}
           </Button>
 
           <Button
@@ -199,9 +190,7 @@ const FormStream = ({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="stream-form-name">
-                  Name
-                </FieldLabel>
+                <FieldLabel htmlFor="stream-form-name">Name</FieldLabel>
 
                 <Input
                   {...field}
@@ -226,10 +215,7 @@ const FormStream = ({
               <Field data-invalid={fieldState.invalid}>
                 <FieldLabel>Type</FieldLabel>
 
-                <Select
-                  value={field.value}
-                  onValueChange={field.onChange}
-                >
+                <Select value={field.value} onValueChange={field.onChange}>
                   <SelectTrigger
                     className="rounded-sm"
                     aria-invalid={fieldState.invalid}
@@ -260,9 +246,7 @@ const FormStream = ({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="stream-form-url">
-                  Stream URL
-                </FieldLabel>
+                <FieldLabel htmlFor="stream-form-url">Stream URL</FieldLabel>
 
                 <Input
                   {...field}
@@ -285,9 +269,7 @@ const FormStream = ({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="stream-form-drm-id">
-                  DRM ID
-                </FieldLabel>
+                <FieldLabel htmlFor="stream-form-drm-id">DRM ID</FieldLabel>
 
                 <Input
                   {...field}
@@ -309,9 +291,7 @@ const FormStream = ({
             control={form.control}
             render={({ field, fieldState }) => (
               <Field data-invalid={fieldState.invalid}>
-                <FieldLabel htmlFor="stream-form-drm-key">
-                  DRM KEY
-                </FieldLabel>
+                <FieldLabel htmlFor="stream-form-drm-key">DRM KEY</FieldLabel>
 
                 <Input
                   {...field}
@@ -352,51 +332,82 @@ const FormStream = ({
             )}
           />
 
-          <Controller
-            name="directLinkActive"
-            control={form.control}
-            render={({ field, fieldState }) => (
-              <Field data-invalid={fieldState.invalid}>
-                <FieldLabel>Status Direct Link</FieldLabel>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <Controller
+              name="directLinkActive"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Status Direct Link</FieldLabel>
 
-                <Select
-                  value={field.value ? "true" : "false"}
-                  onValueChange={(value) =>
-                    field.onChange(value === "true")
-                  }
-                >
-                  <SelectTrigger
-                    className="rounded-sm"
-                    aria-invalid={fieldState.invalid}
+                  <Select
+                    value={field.value ? "true" : "false"}
+                    onValueChange={(value) => field.onChange(value === "true")}
                   >
-                    <SelectValue>
-                      {field.value ? "Active" : "Non Active"}
-                    </SelectValue>
-                  </SelectTrigger>
-
-                  <SelectContent className="rounded-sm">
-                    <SelectItem
-                      value="true"
+                    <SelectTrigger
                       className="rounded-sm"
+                      aria-invalid={fieldState.invalid}
                     >
-                      Active
-                    </SelectItem>
+                      <SelectValue>
+                        {field.value ? "Active" : "Non Active"}
+                      </SelectValue>
+                    </SelectTrigger>
 
-                    <SelectItem
-                      value="false"
+                    <SelectContent className="rounded-sm">
+                      <SelectItem value="true" className="rounded-sm">
+                        Active
+                      </SelectItem>
+
+                      <SelectItem value="false" className="rounded-sm">
+                        Non Active
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+            <Controller
+              name="isActive"
+              control={form.control}
+              render={({ field, fieldState }) => (
+                <Field data-invalid={fieldState.invalid}>
+                  <FieldLabel>Status Streams</FieldLabel>
+
+                  <Select
+                    value={field.value ? "true" : "false"}
+                    onValueChange={(value) => field.onChange(value === "true")}
+                  >
+                    <SelectTrigger
                       className="rounded-sm"
+                      aria-invalid={fieldState.invalid}
                     >
-                      Non Active
-                    </SelectItem>
-                  </SelectContent>
-                </Select>
+                      <SelectValue>
+                        {field.value ? "Active" : "Non Active"}
+                      </SelectValue>
+                    </SelectTrigger>
 
-                {fieldState.invalid && (
-                  <FieldError errors={[fieldState.error]} />
-                )}
-              </Field>
-            )}
-          />
+                    <SelectContent className="rounded-sm">
+                      <SelectItem value="true" className="rounded-sm">
+                        Active
+                      </SelectItem>
+
+                      <SelectItem value="false" className="rounded-sm">
+                        Non Active
+                      </SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {fieldState.invalid && (
+                    <FieldError errors={[fieldState.error]} />
+                  )}
+                </Field>
+              )}
+            />
+          </div>
         </FieldGroup>
       </form>
     </Modal>

@@ -13,6 +13,7 @@ export const saveStream = async (data: FormData, id?: string | null) => {
     const drmKey = (data.get("drmKey") as string) || null;
     const directLink = (data.get("directLink") as string) || null;
     const directLinkActive = data.get("directLinkActive") === "true";
+    const isActive = data.get("isActive") === "true";
 
     let affectedSlugs: string[] = [];
 
@@ -39,6 +40,7 @@ export const saveStream = async (data: FormData, id?: string | null) => {
           drmKey,
           directLink,
           directLinkActive,
+          isActive
         },
       });
 
@@ -64,6 +66,7 @@ export const saveStream = async (data: FormData, id?: string | null) => {
         drmKey,
         directLink,
         directLinkActive,
+        isActive,
       },
     });
 
