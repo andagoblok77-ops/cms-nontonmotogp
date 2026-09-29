@@ -14,6 +14,33 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+
+  async redirects() {
+    return [
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "livemotogp.com",
+          },
+        ],
+        destination: "https://www.livemotogp.my.id/:path*",
+        permanent: true,
+      },
+      {
+        source: "/:path*",
+        has: [
+          {
+            type: "host",
+            value: "www.livemotogp.com",
+          },
+        ],
+        destination: "https://www.livemotogp.my.id/:path*",
+        permanent: true,
+      },
+    ];
+  },
 };
 
 export default nextConfig;
