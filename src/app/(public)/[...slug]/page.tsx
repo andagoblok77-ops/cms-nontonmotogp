@@ -200,7 +200,7 @@ const Page = async ({ params }: PageProps) => {
   };
 
   return (
-    <>
+    <div className="bg-white">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{
@@ -208,7 +208,7 @@ const Page = async ({ params }: PageProps) => {
         }}
       />
       <Player ads={ads} posts={posts} site={playerSite} />
-    </>
+    </div>
   );
 };
 

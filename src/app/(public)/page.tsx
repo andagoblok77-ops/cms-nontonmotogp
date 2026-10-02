@@ -24,7 +24,7 @@ export default async function HomePage({ searchParams }: HomePageProps) {
   const [site, { articles, currentPage, totalPages, total }] =
     await Promise.all([getSiteSetting(), getArticles(page, search)]);
   return (
-    <div className="w-full ">
+    <div className="w-full bg-white">
       {!isSearching && <Hero site={site} />}
       <main className="mx-auto max-w-6xl px-2  py-2">
         <section className="border-b-4 border-black mx-2 py-2">
